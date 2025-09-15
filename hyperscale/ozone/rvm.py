@@ -286,7 +286,6 @@ class WorkflowRole:
                 },
                 Policies=[
                     iam.Policy(
-                        "AllowCreateRole",
                         PolicyName="AllowCreateRole",
                         PolicyDocument={
                             "Version": "2012-10-17",
@@ -317,7 +316,6 @@ class WorkflowRole:
                         },
                     ),
                     iam.Policy(
-                        "AllowManageRvmStacks",
                         PolicyName="AllowManageRvmStacks",
                         PolicyDocument={
                             "Version": "2012-10-17",
