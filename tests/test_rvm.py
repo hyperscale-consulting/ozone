@@ -1,9 +1,10 @@
 import cfnlint
 
-from hyperscale.ozone import rvm
+from hyperscale.ozone.rvm import RoleVendingMachine
 
 
 def test_rvm():
+    rvm = RoleVendingMachine()
     t = rvm.create_template()
     errors = cfnlint.lint(
         t.to_json(),
