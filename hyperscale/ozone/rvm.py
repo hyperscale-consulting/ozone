@@ -21,6 +21,7 @@ def _load_handler_code() -> str:
 class RoleVendingMachine:
     def create_template(self) -> Template:
         template = Template()
+        template.set_description("Role Vending Machine")
         self.add_resources(template)
         return template
 
@@ -227,5 +228,123 @@ class RoleVendingMachine:
                 "RvmCiRole",
                 Description="ARN of the RVM CI/CD Role",
                 Value=GetAtt(ci_role, "Arn"),
+            )
+        )
+
+
+class WorkflowRole:
+    """
+    Role Vending Machine workflow roles that get deployed to each RVM managed account.
+    """
+
+    def create_template(self) -> Template:
+        template = Template()
+        template.set_description(
+            "Role Vending Machine workflow roles that get deployed to each RVM "
+            "managed account."
+        )
+        self.add_resources(template)
+        return template
+
+    def add_resources(self, template: Template) -> None:
+        template.add_parameter(
+            Parameter(
+                "RvmAccount",
+                Type="String",
+                Description="The ID of the RVM account",
+            )
+        )
+        template.add_resource(
+            iam.Role(
+                "RvmWorkflowRole",
+                Metadata=cfn_nag.suppress(
+                    [
+                        cfn_nag.rule("W11", "Need to be able to manage all roles"),
+                        cfn_nag.rule(
+                            "W28",
+                            "Static role name so it can be easily referred to in "
+                            "the RVM main role policy",
+                        ),
+                    ]
+                ),
+                RoleName="RvmWorkflowRole",
+                Description="The role assumed by the RVM Main Role from the RVM "
+                "account to vend new roles",
+                AssumeRolePolicyDocument={
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "AWS": Sub(
+                                    "arn:${AWS::Partition}:iam::${RvmAccount}:role/RvmMainRole"
+                                )
+                            },
+                            "Action": "sts:AssumeRole",
+                        }
+                    ],
+                },
+                Policies=[
+                    iam.Policy(
+                        "AllowCreateRole",
+                        PolicyName="AllowCreateRole",
+                        PolicyDocument={
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "iam:CreateRole",
+                                        "iam:AttachRolePolicy",
+                                        "iam:CreatePolicy",
+                                        "iam:DeleteRole",
+                                        "iam:DeletePolicy",
+                                        "iam:DetachRolePolicy",
+                                        "iam:GetPolicy",
+                                        "iam:GetPolicyVersion",
+                                        "iam:GetRole",
+                                        "iam:GetRolePolicy",
+                                        "iam:ListAttachedRolePolicies",
+                                        "iam:ListRoles",
+                                        "iam:ListPolicies",
+                                        "iam:UpdateRole",
+                                        "iam:PutRolePolicy",
+                                        "iam:SetDefaultPolicyVersion",
+                                    ],
+                                    "Resource": "*",
+                                }
+                            ],
+                        },
+                    ),
+                    iam.Policy(
+                        "AllowManageRvmStacks",
+                        PolicyName="AllowManageRvmStacks",
+                        PolicyDocument={
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "cloudformation:CreateStack",
+                                        "cloudformation:DeleteStack",
+                                        "cloudformation:UpdateStack",
+                                    ],
+                                    "Resource": Sub(
+                                        "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/rvm-provisioned-*"
+                                    ),
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "cloudformation:DescribeStacks",
+                                        "cloudformation:ListStacks",
+                                        "cloudformation:GetTemplateSummary",
+                                    ],
+                                    "Resource": "*",
+                                },
+                            ],
+                        },
+                    ),
+                ],
             )
         )
