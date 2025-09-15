@@ -40,7 +40,8 @@ pre-commit = [
 ]
 typing = [
   "mypy",
-  "pyright"
+  "pyright",
+  "boto3-stubs[all]"
 ]
 
 [tool.uv]
