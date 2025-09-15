@@ -1,3 +1,5 @@
+from importlib import resources
+
 from troposphere import awslambda
 from troposphere import GetAtt
 from troposphere import iam
@@ -14,8 +16,7 @@ from hyperscale.ozone.s3 import SecureS3
 
 
 def _load_handler_code() -> str:
-    with open("hyperscale/ozone/rvm_lambda.py") as file:
-        return file.read()
+    return resources.files("hyperscale.ozone").joinpath("rvm_lambda.py").read_text()
 
 
 class RoleVendingMachine:
