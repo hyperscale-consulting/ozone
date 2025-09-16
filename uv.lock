@@ -933,9 +933,10 @@ wheels = [
 
 [[package]]
 name = "hyperscale-ozone"
-version = "0.1.2"
+version = "0.2.0"
 source = { editable = "." }
 dependencies = [
+    { name = "click" },
     { name = "troposphere" },
 ]
 
@@ -962,7 +963,10 @@ typing = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "troposphere", specifier = ">=4.9.4" }]
+requires-dist = [
+    { name = "click", specifier = ">=8.2.1" },
+    { name = "troposphere", specifier = ">=4.9.4" },
+]
 
 [package.metadata.requires-dev]
 dev = [{ name = "ruff" }]
