@@ -137,7 +137,7 @@ class RoleVendingMachine:
 
         pipeline_s3 = SecureS3(
             scope="RvmPipeline",
-            access_logs_param=pipeline_bucket_access_logs_param,
+            access_logs_bucket=Ref(pipeline_bucket_access_logs_param),
             notification_config=s3.NotificationConfiguration(
                 LambdaConfigurations=[
                     s3.LambdaConfigurations(

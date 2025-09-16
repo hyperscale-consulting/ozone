@@ -1,5 +1,6 @@
 import cfnlint
 
+from hyperscale.ozone.s3 import CentralLogArchiveBuckets
 from hyperscale.ozone.s3 import LocalAccessLogsBucket
 
 
@@ -17,3 +18,21 @@ def test_local_access_logs_bucket():
 
     resources = d["Resources"]
     assert "AccessLogsBucket" in resources
+
+
+def test_central_log_archive_buckets():
+    buckets = CentralLogArchiveBuckets(account_ids=["111111111111", "222222222222"])
+    t = buckets.create_template()
+
+    errors = cfnlint.lint(
+        t.to_json(),
+    )
+    assert not errors
+    d = t.to_dict()
+    params = d["Parameters"]
+    assert "RetentionDaysForLogs" in params
+    assert "RetentionDaysForAccessLogs" in params
+
+    resources = d["Resources"]
+    assert "AccessLogsBucket" in resources
+    assert "LogsBucket" in resources
