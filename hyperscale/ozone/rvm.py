@@ -138,12 +138,13 @@ class RoleVendingMachine:
 
         pipeline_s3 = SecureS3(
             scope="RvmPipeline",
+            bucket_name=Sub("rvm-pipeline-bucket-${AWS::AccountId}"),
             access_logs_bucket=Ref(pipeline_bucket_access_logs_param),
             notification_config=s3.NotificationConfiguration(
                 LambdaConfigurations=[
                     s3.LambdaConfigurations(
                         Event="s3:ObjectCreated:*",
-                        Function=Ref(rvm_func),
+                        Function=GetAtt(rvm_func, "Arn"),
                         Filter=s3.Filter(
                             S3Key=s3.S3Key(
                                 Rules=[s3.Rules(Name="suffix", Value=".zip")]
@@ -167,13 +168,16 @@ class RoleVendingMachine:
         template.add_resource(
             awslambda.Permission(
                 "LambdaInvokePermission",
-                FunctionName=Ref(rvm_func),
+                FunctionName=GetAtt(rvm_func, "Arn"),
                 Action="lambda:InvokeFunction",
                 Principal="s3.amazonaws.com",
-                SourceArn=GetAtt("RvmPipelineBucket", "Arn"),
+                SourceArn=Sub(
+                    "arn:${AWS::Partition}:s3:::rvm-pipeline-bucket-${AWS::AccountId}"
+                ),
                 SourceAccount=Ref("AWS::AccountId"),
             )
         )
+        claim_prefix = "token.actions.githubusercontent.com:"
         ci_role = template.add_resource(
             iam.Role(
                 "RvmCiCdRole",
@@ -186,8 +190,8 @@ class RoleVendingMachine:
                             "Action": "sts:AssumeRoleWithWebIdentity",
                             "Condition": {
                                 "StringEquals": {
-                                    "token.actions.github.com:aud": "sts.amazonaws.com",
-                                    "token.actions.github.com:sub": Sub(
+                                    f"{claim_prefix}aud": "sts.amazonaws.com",
+                                    f"{claim_prefix}sub": Sub(
                                         "repo:${GitHubRepo}:ref:refs/heads/main"
                                     ),
                                 }
