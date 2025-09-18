@@ -249,17 +249,19 @@ class LocalAccessLogsBucket:
                 Description="The ID of the Log Archive account.",
             )
         )
-        replication_role_arn_param = t.add_parameter(
+        t.add_parameter(
             Parameter(
-                "ReplicationRoleArn",
+                "ReplicationRoleName",
                 Type="String",
-                Description="The ARN of the role that allows replication to the "
+                Description="The name of the role that allows replication to the "
                 "central log archive bucket",
             )
         )
 
         replication_config = s3.ReplicationConfiguration(
-            Role=Ref(replication_role_arn_param),
+            Role=Sub(
+                "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${ReplicationRoleName}"
+            ),
             Rules=[
                 s3.ReplicationConfigurationRules(
                     Destination=s3.ReplicationConfigurationRulesDestination(

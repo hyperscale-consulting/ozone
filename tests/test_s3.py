@@ -16,7 +16,7 @@ def test_local_access_logs_bucket():
     params = d["Parameters"]
     assert "CentralS3AccessLogsBucket" in params
     assert "LogArchiveAccount" in params
-    assert "ReplicationRoleArn" in params
+    assert "ReplicationRoleName" in params
 
     resources = d["Resources"]
     assert "AccessLogsBucket" in resources
