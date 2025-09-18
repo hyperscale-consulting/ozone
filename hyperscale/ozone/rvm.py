@@ -67,6 +67,7 @@ class RoleVendingMachine:
                     "Statement": [
                         {
                             "Effect": "Allow",
+                            "Action": "sts:AssumeRole",
                             "Principal": {"Service": "lambda.amazonaws.com"},
                         }
                     ],
