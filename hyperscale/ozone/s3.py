@@ -3,7 +3,6 @@ from dataclasses import field
 from typing import Any
 
 from troposphere import AWSHelperFn
-from troposphere import GetAtt
 from troposphere import iam
 from troposphere import Output
 from troposphere import Parameter
@@ -134,17 +133,17 @@ class SecureS3:
         )
 
 
-class LocalAccessLogsBucket:
+class CentralS3AccessLogsReplicationRole:
     """
-    Creates an account local access logs bucket that replicates access logs to a
-    central log bucket in a log archive account.
+    Creates the replication roles required to replicate s3 access logs from
+    account-local buckets to a central log archive bucket.
     """
 
     def create_template(self) -> Template:
         t = Template()
         t.set_description(
-            "S3 access log bucket set up to replicate to a central log bucket in a "
-            "log archive "
+            "IAM role for replicating account-local s3 access logs to a central log "
+            "archive bucket"
         )
         t.add_parameter(
             Parameter(
@@ -153,14 +152,6 @@ class LocalAccessLogsBucket:
                 Description="The name of the central S3 access logs bucket.",
             )
         )
-        log_archive_account_param = t.add_parameter(
-            Parameter(
-                "LogArchiveAccount",
-                Type="String",
-                Description="The ID of the Log Archive account.",
-            )
-        )
-
         t.add_resource(
             iam.Role(
                 "ReplicationRole",
@@ -229,8 +220,46 @@ class LocalAccessLogsBucket:
             )
         )
 
+        return t
+
+
+class LocalAccessLogsBucket:
+    """
+    Creates an account local access logs bucket that replicates access logs to a
+    central log bucket in a log archive account.
+    """
+
+    def create_template(self) -> Template:
+        t = Template()
+        t.set_description(
+            "S3 access log bucket set up to replicate to a central log bucket in a "
+            "log archive "
+        )
+        t.add_parameter(
+            Parameter(
+                "CentralS3AccessLogsBucket",
+                Type="String",
+                Description="The name of the central S3 access logs bucket.",
+            )
+        )
+        log_archive_account_param = t.add_parameter(
+            Parameter(
+                "LogArchiveAccount",
+                Type="String",
+                Description="The ID of the Log Archive account.",
+            )
+        )
+        replication_role_arn_param = t.add_parameter(
+            Parameter(
+                "ReplicationRoleArn",
+                Type="String",
+                Description="The ARN of the role that allows replication to the "
+                "central log archive bucket",
+            )
+        )
+
         replication_config = s3.ReplicationConfiguration(
-            Role=GetAtt("ReplicationRole", "Arn"),
+            Role=Ref(replication_role_arn_param),
             Rules=[
                 s3.ReplicationConfigurationRules(
                     Destination=s3.ReplicationConfigurationRulesDestination(
