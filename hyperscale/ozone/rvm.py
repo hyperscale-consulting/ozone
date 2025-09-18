@@ -170,7 +170,8 @@ class RoleVendingMachine:
                 FunctionName=Ref(rvm_func),
                 Action="lambda:InvokeFunction",
                 Principal="s3.amazonaws.com",
-                SourceArn=Sub("${RvmPipelineBucket.Arn}/rvm-configuration.zip"),
+                SourceArn=GetAtt("RvmPipelineBucket", "Arn"),
+                SourceAccount=Ref("AWS::AccountId"),
             )
         )
         ci_role = template.add_resource(
