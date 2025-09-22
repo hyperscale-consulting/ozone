@@ -1,6 +1,6 @@
 [project]
 name = "hyperscale-ozone"
-version = "0.6.0"
+version = "0.6.1"
 description = "Higher-level constructs build on troposphere"
 readme = "README.md"
 requires-python = ">=3.10"

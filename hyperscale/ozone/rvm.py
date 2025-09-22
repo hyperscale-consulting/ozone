@@ -284,10 +284,17 @@ class WorkflowRole:
                             "Effect": "Allow",
                             "Principal": {
                                 "AWS": Sub(
-                                    "arn:${AWS::Partition}:iam::${RvmAccount}:role/RvmMainRole"
+                                    "arn:${AWS::Partition}:iam::${RvmAccount}:root"
                                 )
                             },
                             "Action": "sts:AssumeRole",
+                            "Condition": {
+                                "StringLike": {
+                                    "aws:PrincipalArn": Sub(
+                                        "arn:${AWS::Partition}:iam::${RvmAccount}:role/RvmMainRole"
+                                    )
+                                }
+                            },
                         }
                     ],
                 },
