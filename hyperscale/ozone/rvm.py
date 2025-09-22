@@ -300,16 +300,18 @@ class WorkflowRole:
                 },
                 Policies=[
                     iam.Policy(
-                        PolicyName="AllowCreateRole",
+                        PolicyName="AllowManagePermissions",
                         PolicyDocument={
                             "Version": "2012-10-17",
                             "Statement": [
                                 {
                                     "Effect": "Allow",
                                     "Action": [
-                                        "iam:CreateRole",
                                         "iam:AttachRolePolicy",
+                                        "iam:CreateRole",
                                         "iam:CreatePolicy",
+                                        "iam:CreatePolicyVersion",
+                                        "iam:DeleteRolePolicy",
                                         "iam:DeleteRole",
                                         "iam:DeletePolicy",
                                         "iam:DetachRolePolicy",
