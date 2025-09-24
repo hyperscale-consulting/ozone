@@ -3,6 +3,7 @@ import click
 from hyperscale.ozone.iam import GitHubOIDCProvider
 from hyperscale.ozone.rvm import RoleVendingMachine
 from hyperscale.ozone.rvm import WorkflowRole
+from hyperscale.ozone.s3 import CentralLogArchiveBuckets
 from hyperscale.ozone.s3 import CentralS3AccessLogsReplicationRole
 from hyperscale.ozone.s3 import LocalAccessLogsBucket
 
@@ -15,6 +16,10 @@ def main():
 
 
 TEMPLATES = {
+    "central-log-archive-buckets": (
+        CentralLogArchiveBuckets(),
+        "Central log archive buckets",
+    ),
     "role-vending-machine": (RoleVendingMachine(), "A Role Vending Machine"),
     "rvm-workflow-role": (
         WorkflowRole(),

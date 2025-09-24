@@ -158,7 +158,14 @@ class CentralS3AccessLogsReplicationRole:
                 Type="String",
                 Description="The prefix name of the local S3 access logs bucket e.g. "
                 "s3-access-logs. Assumes name format of "
-                "BucketPrefix>-<AccountId>-<Region>",
+                "<BucketPrefix>-<AccountId>-<Region>",
+            )
+        )
+        t.add_parameter(
+            Parameter(
+                "ReplicationRoleName",
+                Type="String",
+                Description="The name of the replication role to create",
             )
         )
         t.add_resource(
@@ -173,7 +180,7 @@ class CentralS3AccessLogsReplicationRole:
                         )
                     ]
                 ),
-                RoleName="CentralS3AccessLogsReplicationRole",
+                RoleName=Sub("${ReplicationRoleName}"),
                 AssumeRolePolicyDocument={
                     "Version": "2012-10-17",
                     "Statement": [
@@ -266,6 +273,15 @@ class LocalAccessLogsBucket:
                 "central log archive bucket",
             )
         )
+        t.add_parameter(
+            Parameter(
+                "LocalS3AccessLogsBucketPrefix",
+                Type="String",
+                Description="The prefix name of the local S3 access logs bucket e.g. "
+                "s3-access-logs. Final bucket name format is "
+                "<BucketPrefix>-<AccountId>-<Region>",
+            )
+        )
 
         replication_config = s3.ReplicationConfiguration(
             Role=Sub(
@@ -296,7 +312,9 @@ class LocalAccessLogsBucket:
                     },
                 },
             ],
-            bucket_name=Sub("s3-access-logs-${AWS::AccountId}-${AWS::Region}"),
+            bucket_name=Sub(
+                "${LocalS3AccessLogsBucketPrefix}-${AWS::AccountId}-${AWS::Region}"
+            ),
             is_access_logs_bucket=True,
             retention_days=1,
             replication_config=replication_config,
@@ -316,12 +334,26 @@ class LocalAccessLogsBucket:
 
 @dataclass
 class CentralLogArchiveBuckets:
-    account_ids: list[str]
-
     def create_template(self) -> Template:
         t = Template()
-        t.set_description(
-            "Central log archive buckets that can be used across an organization."
+        t.set_description("Central log archive buckets.")
+        t.add_parameter(
+            Parameter(
+                "S3AccessLogsBucketPrefix",
+                Type="String",
+                Description="The prefix name of the S3 access logs bucket e.g. "
+                "central-s3-access-logs. Final bucket name format is "
+                "<BucketPrefix>-<AccountId>-<Region>",
+            )
+        )
+        t.add_parameter(
+            Parameter(
+                "LogsBucketPrefix",
+                Type="String",
+                Description="The prefix name of the logs bucket e.g. "
+                "central-logs. Final bucket name format is "
+                "<BucketPrefix>-<AccountId>-<Region>",
+            )
         )
         retention_days_for_access_logs = t.add_parameter(
             Parameter(
@@ -339,22 +371,37 @@ class CentralLogArchiveBuckets:
                 Default="3650",
             )
         )
-
-        replication_principals = [
-            Sub(
-                f"arn:${{AWS::Partition}}:iam::{aid}:role/CentralS3AccessLogsReplicationRole"
+        org_id_param = t.add_parameter(
+            Parameter("OrgId", Type="String", Description="The AWS Organization ID")
+        )
+        t.add_parameter(
+            Parameter(
+                "ReplicationRoleName",
+                Type="String",
+                Description="The name of the role that allows replication to the s3 "
+                "access logs bucket",
             )
-            for aid in self.account_ids
-        ]
+        )
+
         access_logs_bucket = SecureS3(
             "AccessLogs",
-            bucket_name=Sub("central-s3-access-logs-${AWS::AccountId}-${AWS::Region}"),
+            bucket_name=Sub(
+                "${S3AccessLogsBucketPrefix}-${AWS::AccountId}-${AWS::Region}"
+            ),
             policy_statements=[
                 {
                     "Effect": "Allow",
-                    "Principal": {"AWS": replication_principals},
+                    "Principal": "*",
                     "Action": ["s3:ReplicateObject", "s3:ReplicateDelete"],
                     "Resource": Sub("arn:${AWS::Partition}:s3:::${AccessLogsBucket}/*"),
+                    "Condition": {
+                        "StringEquals": {"aws:PrincipalOrgID": Ref(org_id_param)},
+                        "ArnLike": {
+                            "aws:PrincipalArn": Sub(
+                                "arn:${AWS::Partition}:iam::*:role/${ReplicationRoleName}"
+                            )
+                        },
+                    },
                 }
             ],
             retention_days=Ref(retention_days_for_access_logs),
@@ -362,73 +409,89 @@ class CentralLogArchiveBuckets:
         )
         access_logs_bucket.add_resources(t)
 
-        statements = []
-        for account_id in self.account_ids:
-            statements.append(
+        logs_bucket = SecureS3(
+            "Logs",
+            policy_statements=[
                 {
+                    "Sid": "ELBLogDeliveryWrite",
                     "Effect": "Allow",
                     "Principal": {
                         "Service": "logdelivery.elasticloadbalancing.amazonaws.com"
                     },
                     "Action": "s3:PutObject",
                     "Resource": Sub(
-                        f"arn:${{AWS::Partition}}:s3:::${{LogsBucket}}/AWSLogs/{account_id}/*"
-                    ),
-                    "Condition": {
-                        "ArnLike": {
-                            "aws:SourceArn": Sub(
-                                f"arn:${{AWS::Partition}}:elasticloadbalancing:${{AWS::Region}}:{account_id}:loadbalancer/*"
-                            )
-                        }
-                    },
-                }
-            )
-            statements.append(
-                {
-                    "Sid": "AWSLogDeliveryWrite",
-                    "Effect": "Allow",
-                    "Principal": {"Service": "delivery.logs.amazonaws.com"},
-                    "Action": "s3:PutObject",
-                    "Resource": Sub(
-                        f"arn:${{AWS::Partition}}:s3:::${{LogsBucket}}/AWSLogs/{account_id}/*"
+                        "arn:${AWS::Partition}:s3:::${LogsBucket}/AWSLogs/*"
                     ),
                     "Condition": {
                         "StringEquals": {
-                            "aws:SourceAccount": account_id,
-                            "s3:x-amz-acl": "bucket-owner-full-control",
+                            "aws:SourceOrgId": Ref(org_id_param),
                         },
                         "ArnLike": {
                             "aws:SourceArn": Sub(
-                                f"arn:${{AWS::Partition}}:logs:${{AWS::Region}}:{account_id}:*"
+                                "arn:${AWS::Partition}:elasticloadbalancing:${AWS::Region}:*:loadbalancer/*"
                             )
                         },
                     },
-                }
-            )
-            statements.append(
+                },
                 {
-                    "Sid": "AWSLogDeliveryAclCheck",
+                    "Sid": "AWSLogDeliveryWrite",
                     "Effect": "Allow",
-                    "Principal": {"Service": "delivery.logs.amazonaws.com"},
+                    "Principal": {
+                        "Service": [
+                            "delivery.logs.amazonaws.com",
+                            "config.amazonaws.com",
+                            "cloudtrail.amazonaws.com",
+                        ]
+                    },
+                    "Action": "s3:PutObject",
+                    "Resource": Sub(
+                        "arn:${AWS::Partition}:s3:::${LogsBucket}/AWSLogs/*"
+                    ),
+                    "Condition": {
+                        "StringEquals": {
+                            "aws:SourceOrgId": Ref(org_id_param),
+                            "s3:x-amz-acl": "bucket-owner-full-control",
+                        },
+                    },
+                },
+                {
+                    "Sid": "AclCheck",
+                    "Effect": "Allow",
+                    "Principal": {
+                        "Service": [
+                            "delivery.logs.amazonaws.com",
+                            "config.amazonaws.com",
+                            "cloudtrail.amazonaws.com",
+                        ]
+                    },
                     "Action": "s3:GetBucketAcl",
                     "Resource": Sub("arn:${AWS::Partition}:s3:::${LogsBucket}"),
                     "Condition": {
                         "StringEquals": {
-                            "aws:SourceAccount": account_id,
-                        },
-                        "ArnLike": {
-                            "aws:SourceArn": Sub(
-                                f"arn:${{AWS::Partition}}:logs:${{AWS::Region}}:{account_id}:*"
-                            )
+                            "aws:SourceOrgId": Ref(org_id_param),
                         },
                     },
-                }
-            )
-
-        logs_bucket = SecureS3(
-            "Logs",
-            policy_statements=statements,
-            bucket_name=Sub("central-logs-${AWS::AccountId}-${AWS::Region}"),
+                },
+                {
+                    "Sid": "BucketExistenceCheck",
+                    "Effect": "Allow",
+                    "Principal": {
+                        "Service": [
+                            "delivery.logs.amazonaws.com",
+                            "config.amazonaws.com",
+                            "cloudtrail.amazonaws.com",
+                        ]
+                    },
+                    "Action": "s3:ListBucket",
+                    "Resource": Sub("arn:${AWS::Partition}:s3:::${LogsBucket}"),
+                    "Condition": {
+                        "StringEquals": {
+                            "aws:SourceOrgId": Ref(org_id_param),
+                        },
+                    },
+                },
+            ],
+            bucket_name=Sub("${LogsBucketPrefix}-${AWS::AccountId}-${AWS::Region}"),
             retention_days=Ref(retention_days_for_logs),
             access_logs_bucket=Ref(access_logs_bucket.bucket),
         )

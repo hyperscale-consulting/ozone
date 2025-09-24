@@ -23,7 +23,7 @@ def test_local_access_logs_bucket():
 
 
 def test_central_log_archive_buckets():
-    buckets = CentralLogArchiveBuckets(account_ids=["111111111111", "222222222222"])
+    buckets = CentralLogArchiveBuckets()
     t = buckets.create_template()
 
     errors = cfnlint.lint(
