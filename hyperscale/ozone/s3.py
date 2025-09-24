@@ -149,7 +149,16 @@ class CentralS3AccessLogsReplicationRole:
             Parameter(
                 "CentralS3AccessLogsBucket",
                 Type="String",
-                Description="The name of the central S3 access logs bucket.",
+                Description="The full name of the central S3 access logs bucket.",
+            )
+        )
+        t.add_parameter(
+            Parameter(
+                "LocalS3AccessLogsBucketPrefix",
+                Type="String",
+                Description="The prefix name of the local S3 access logs bucket e.g. "
+                "s3-access-logs. Assumes name format of "
+                "BucketPrefix>-<AccountId>-<Region>",
             )
         )
         t.add_resource(
@@ -188,7 +197,7 @@ class CentralS3AccessLogsReplicationRole:
                                         "s3:ListBucket",
                                     ],
                                     "Resource": Sub(
-                                        "arn:${AWS::Partition}:s3:::s3-access-logs-${AWS::AccountId}-${AWS::Region}"
+                                        "arn:${AWS::Partition}:s3:::${LocalS3AccessLogsBucketPrefix}-${AWS::AccountId}-${AWS::Region}"
                                     ),
                                 },
                                 {
@@ -199,7 +208,7 @@ class CentralS3AccessLogsReplicationRole:
                                         "s3:GetObjectVersionTagging",
                                     ],
                                     "Resource": Sub(
-                                        "arn:${AWS::Partition}:s3:::s3-access-logs-${AWS::AccountId}-${AWS::Region}/*"
+                                        "arn:${AWS::Partition}:s3:::${LocalS3AccessLogsBucketPrefix}-${AWS::AccountId}-${AWS::Region}/*"
                                     ),
                                 },
                                 {
@@ -210,7 +219,7 @@ class CentralS3AccessLogsReplicationRole:
                                         "s3:ReplicateTags",
                                     ],
                                     "Resource": Sub(
-                                        "arn:${AWS::Partition}:s3:::${CentralS3AccessLogsBucket}/*"
+                                        "arn:${AWS::Partition}:s3:::${CentralS3AccessLogsBucket}/*",
                                     ),
                                 },
                             ],
