@@ -3,6 +3,7 @@ import click
 from hyperscale.ozone.iam import GitHubOIDCProvider
 from hyperscale.ozone.rvm import RoleVendingMachine
 from hyperscale.ozone.rvm import WorkflowRole
+from hyperscale.ozone.s3 import CentralS3AccessLogsReplicationRole
 from hyperscale.ozone.s3 import LocalAccessLogsBucket
 
 
@@ -25,6 +26,10 @@ TEMPLATES = {
         "account",
     ),
     "github-oidc-provider": (GitHubOIDCProvider(), "An IAM OIDC provider for GitHub"),
+    "central-s3-access-logs-replication-role": (
+        CentralS3AccessLogsReplicationRole(),
+        "A role for replicating s3 objects to the central s3 access logs bucket",
+    ),
 }
 
 
