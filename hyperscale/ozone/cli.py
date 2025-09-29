@@ -1,6 +1,7 @@
 import click
 
 from hyperscale.ozone.iam import GitHubOIDCProvider
+from hyperscale.ozone.pipelines import LandingZoneConfigurationPipeline
 from hyperscale.ozone.rvm import RoleVendingMachine
 from hyperscale.ozone.rvm import WorkflowRole
 from hyperscale.ozone.s3 import CentralLogArchiveBuckets
@@ -34,6 +35,10 @@ TEMPLATES = {
     "central-s3-access-logs-replication-role": (
         CentralS3AccessLogsReplicationRole(),
         "A role for replicating s3 objects to the central s3 access logs bucket",
+    ),
+    "landing-zone-configuration-pipeline": (
+        LandingZoneConfigurationPipeline(),
+        "A pipeline for landing zone configuration",
     ),
 }
 
