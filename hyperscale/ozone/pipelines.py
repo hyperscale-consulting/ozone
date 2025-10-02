@@ -66,7 +66,9 @@ class LandingZoneConfigurationPipeline:
                             "Action": "sts:AssumeRoleWithWebIdentity",
                             "Condition": {
                                 "StringEquals": {
-                                    "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                                    "token.actions.githubusercontent.com:aud": (
+                                        "sts.amazonaws.com"
+                                    ),
                                 },
                                 "StringLike": {
                                     "token.actions.githubusercontent.com:sub": Sub(
@@ -340,7 +342,7 @@ class LandingZoneConfigurationPipeline:
                 ),
                 Environment=codebuild.Environment(
                     ComputeType="BUILD_GENERAL1_SMALL",
-                    Image="ghcr.io/hyperscale-consulting/stax@sha256:7fedb78139e2d5a246882b52fae37447fa82efd4e8be5c79d39a7f85918b71d3",
+                    Image="ghcr.io/hyperscale-consulting/stax@sha256:5aee6758058d832aedcfc0b28dd649b13042dacecd5c4f42fb831f67513fc2e2",
                     Type="LINUX_CONTAINER",
                 ),
                 Source=codebuild.Source(
@@ -424,5 +426,5 @@ phases:
   build:
     commands:
       - ls
-      - stax deploy -p ${LandingZoneName} -s lz-config.zip.sigstore.json -i https://github.com/${RepoOwner}/${Repo}/.github/workflows/${PublishWorkflow}@refs/tags/v$(cat VERSION.txt) -r https://token.actions.githubusercontent.com lz-config.zip
+      - stax deploy -n ${LandingZoneName} -s lz-config.zip.sigstore.json -i https://github.com/${RepoOwner}/${Repo}/.github/workflows/${PublishWorkflow}@refs/tags/v$(cat VERSION.txt) -r https://token.actions.githubusercontent.com lz-config.zip
 """
