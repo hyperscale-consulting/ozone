@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from troposphere import codebuild
 from troposphere import codepipeline
 from troposphere import GetAtt
@@ -5,6 +7,7 @@ from troposphere import iam
 from troposphere import Output
 from troposphere import Parameter
 from troposphere import Ref
+from troposphere import s3
 from troposphere import Sub
 from troposphere import Template
 
@@ -15,15 +18,62 @@ from hyperscale.ozone.s3 import SecureS3
 class LandingZoneConfigurationPipeline:
     def create_template(self):
         template = Template()
-        template.set_description("A landing zone configuration pipeline")
+        template.set_description(
+            "A pipeline that maintains a landing zone using signed config files "
+            "deployed from github"
+        )
+        self.add_resources(template)
+        return template
+
+    def add_resources(self, template: Template):
+        oidc_provider = GitHubOIDCProvider()
+        oidc_provider.add_resources(template)
+
+        access_logs_bucket = SecureS3(
+            "AccessLogs",
+            bucket_name=Sub("${Namespace}-config-access-logs-${AWS::AccountId}"),
+            is_access_logs_bucket=True,
+            policy_statements=[
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": "logging.s3.amazonaws.com"},
+                    "Action": "s3:PutObject",
+                    "Resource": Sub("${AccessLogsBucket.Arn}/*"),
+                    "Condition": {
+                        "StringEquals": {"aws:SourceAccount": Sub("${AWS::AccountId}")},
+                    },
+                },
+            ],
+            retention_days=365,
+        )
+        access_logs_bucket.add_resources(template)
+
+        pipeline = StaxPipeline(
+            oidc_provider=oidc_provider.oidc_provider,
+            s3_access_logs_bucket=access_logs_bucket.bucket,
+        )
+        pipeline.add_resources(template)
+
+
+@dataclass
+class StaxPipeline:
+    oidc_provider: iam.OIDCProvider | Parameter | None = None
+    s3_access_logs_bucket: s3.Bucket | Parameter | None = None
+
+    def create_template(self):
+        template = Template()
+        template.set_description(
+            "A pipeline that deploys stack sets using stax and signed config files "
+            "deployed from github"
+        )
         self.add_resources(template)
         return template
 
     def add_resources(self, template: Template):
         template.add_parameter(
             Parameter(
-                "LandingZoneName",
-                Description="The name of the landing zone",
+                "Namespace",
+                Description="The namespace for stacks deployed by this pipeline",
                 Type="String",
             )
         )
@@ -49,8 +99,14 @@ class LandingZoneConfigurationPipeline:
             )
         )
 
-        oidc_provider = GitHubOIDCProvider()
-        oidc_provider.add_resources(template)
+        if not self.oidc_provider:
+            self.oidc_provider = template.add_parameter(
+                Parameter(
+                    "GitHubOIDCProviderArn",
+                    Type="String",
+                    Description="The GitHub OIDC Provider ARN",
+                )
+            )
 
         publishing_role = template.add_resource(
             iam.Role(
@@ -60,9 +116,7 @@ class LandingZoneConfigurationPipeline:
                     "Statement": [
                         {
                             "Effect": "Allow",
-                            "Principal": {
-                                "Federated": Ref(oidc_provider.oidc_provider)
-                            },
+                            "Principal": {"Federated": Ref(self.oidc_provider)},
                             "Action": "sts:AssumeRoleWithWebIdentity",
                             "Condition": {
                                 "StringEquals": {
@@ -99,37 +153,26 @@ class LandingZoneConfigurationPipeline:
             )
         )
 
-        access_logs_bucket = SecureS3(
-            "AccessLogs",
-            bucket_name=Sub("${LandingZoneName}-config-access-logs-${AWS::AccountId}"),
-            is_access_logs_bucket=True,
-            policy_statements=[
-                {
-                    "Effect": "Allow",
-                    "Principal": {"Service": "logging.s3.amazonaws.com"},
-                    "Action": "s3:PutObject",
-                    "Resource": Sub("${AccessLogsBucket.Arn}/*"),
-                    "Condition": {
-                        "StringEquals": {"aws:SourceAccount": Sub("${AWS::AccountId}")},
-                    },
-                },
-            ],
-            retention_days=365,
-        )
-        access_logs_bucket.add_resources(template)
-
+        if not self.s3_access_logs_bucket:
+            self.s3_access_logs_bucket = template.add_parameter(
+                Parameter(
+                    "S3AccessLogsBucket",
+                    Type="String",
+                    Description="The bucket for S3 access logs",
+                )
+            )
         source_bucket = SecureS3(
             "Source",
-            bucket_name=Sub("${LandingZoneName}-config-source-${AWS::AccountId}"),
-            access_logs_bucket=Ref(access_logs_bucket.bucket),
+            bucket_name=Sub("${Namespace}-config-source-${AWS::AccountId}"),
+            access_logs_bucket=Ref(self.s3_access_logs_bucket),
             retention_days=7,
         )
         source_bucket.add_resources(template)
 
         artifact_bucket = SecureS3(
             "Artifact",
-            bucket_name=Sub("${LandingZoneName}-config-artifact-${AWS::AccountId}"),
-            access_logs_bucket=Ref(access_logs_bucket.bucket),
+            bucket_name=Sub("${Namespace}-config-artifact-${AWS::AccountId}"),
+            access_logs_bucket=Ref(self.s3_access_logs_bucket),
             retention_days=7,
         )
         artifact_bucket.add_resources(template)
@@ -278,16 +321,19 @@ class LandingZoneConfigurationPipeline:
                                     "Effect": "Allow",
                                     "Action": [
                                         "cloudformation:CreateStackInstances",
-                                        "cloudformation:UpdateStackSet",
+                                        "cloudformation:DeleteStackInstances",
+                                        "cloudformation:ListStackInstances",
                                         "cloudformation:DescribeStackSet",
+                                        "cloudformation:UpdateStackSet",
                                         "cloudformation:GetTemplateSummary",
+                                        "cloudformation:TagResource",
                                     ],
                                     "Resource": [
                                         Sub(
-                                            "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stackset/${LandingZoneName}-*",
+                                            "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stackset/${Namespace}-*",
                                         ),
                                         Sub(
-                                            "arn:${AWS::Partition}:cloudformation:*:${AWS::AccountId}:stackset-target/${LandingZoneName}-*",
+                                            "arn:${AWS::Partition}:cloudformation:*:${AWS::AccountId}:stackset-target/${Namespace}-*",
                                         ),
                                         Sub(
                                             "arn:${AWS::Partition}:cloudformation:${AWS::Region}::type/resource/*",
@@ -295,10 +341,12 @@ class LandingZoneConfigurationPipeline:
                                     ],
                                 },
                                 {
-                                    "Sid": "CreateStackSet",
+                                    "Sid": "ManageStackSetsOnNonSpecificResources",
                                     "Effect": "Allow",
                                     "Action": [
                                         "cloudformation:CreateStackSet",
+                                        "cloudformation:DescribeStackSet",
+                                        "cloudformation:ListStackSets",
                                     ],
                                     "Resource": "*",
                                 },
@@ -379,7 +427,7 @@ class LandingZoneConfigurationPipeline:
                                 ],
                                 Configuration={
                                     "S3Bucket": Ref(source_bucket.bucket),
-                                    "S3ObjectKey": "lz-archive.zip",
+                                    "S3ObjectKey": Sub("${Namespace}-archive.zip"),
                                 },
                                 RoleArn=GetAtt(source_action_role, "Arn"),
                             )
@@ -420,11 +468,16 @@ class LandingZoneConfigurationPipeline:
 
 
 def _build_spec():
-    return """
-version: 0.2
-phases:
-  build:
-    commands:
-      - ls
-      - stax deploy -n ${LandingZoneName} -s lz-config.zip.sigstore.json -i https://github.com/${RepoOwner}/${Repo}/.github/workflows/${PublishWorkflow}@refs/tags/v$(cat VERSION.txt) -r https://token.actions.githubusercontent.com lz-config.zip
-"""
+    return (
+        "version: 0.2\n"
+        "phases:\n"
+        "  build:\n"
+        "    commands:\n"
+        "      - ls\n"
+        "      - stax deploy -n ${Namespace} "
+        "-s ${Namespace}-config.zip.sigstore.json "
+        "-i https://github.com/${RepoOwner}/${Repo}/.github/workflows/"
+        "${PublishWorkflow}@refs/tags/v$(cat VERSION.txt) "
+        "-r https://token.actions.githubusercontent.com "
+        "${Namespace}-config.zip\n"
+    )
