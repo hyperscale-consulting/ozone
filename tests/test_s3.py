@@ -3,6 +3,7 @@ import cfnlint
 from hyperscale.ozone.s3 import CentralLogArchiveBuckets
 from hyperscale.ozone.s3 import CentralS3AccessLogsReplicationRole
 from hyperscale.ozone.s3 import LocalAccessLogsBucket
+from hyperscale.ozone.s3 import OrganizationAssetsBucket
 
 
 def test_local_access_logs_bucket():
@@ -51,3 +52,10 @@ def test_central_s3_access_logs_replication_role():
     assert "CentralS3AccessLogsBucket" in params
     resources = d["Resources"]
     assert "ReplicationRole" in resources
+
+
+def test_organization_assets_bucket():
+    bucket = OrganizationAssetsBucket()
+    t = bucket.create_template()
+    errors = cfnlint.lint(t.to_json())
+    assert not errors

@@ -14,6 +14,46 @@ from troposphere import Template
 from hyperscale.ozone import cfn_nag
 
 
+class OrganizationAssetsBucket:
+    def create_template(self) -> Template:
+        t = Template()
+        t.set_description("S3 bucket for organization shared assets.")
+        self.add_resources(t)
+        return t
+
+    def add_resources(self, t: Template) -> None:
+        access_logs_bucket_param = t.add_parameter(
+            Parameter(
+                "S3AccessLogsBucket",
+                Type="String",
+                Description="The name of the S3 access logs bucket.",
+            )
+        )
+        org_id_param = t.add_parameter(
+            Parameter("OrgId", Type="String", Description="The AWS Organization ID")
+        )
+        bucket = SecureS3(
+            "OrganizationAssets",
+            access_logs_bucket=Ref(access_logs_bucket_param),
+            policy_statements=[
+                {
+                    "Effect": "Allow",
+                    "Principal": "*",
+                    "Action": "s3:GetObject",
+                    "Resource": Sub(
+                        "arn:${AWS::Partition}:s3:::${OrganizationAssetsBucket}/*"
+                    ),
+                    "Condition": {
+                        "StringEquals": {"aws:PrincipalOrgID": Ref(org_id_param)},
+                    },
+                }
+            ],
+            bucket_name=Sub("organization-assets-${AWS::AccountId}-${AWS::Region}"),
+            retention_days=3650,
+        )
+        bucket.add_resources(t)
+
+
 @dataclass
 class SecureS3:
     """

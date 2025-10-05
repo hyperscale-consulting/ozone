@@ -7,6 +7,7 @@ from hyperscale.ozone.rvm import WorkflowRole
 from hyperscale.ozone.s3 import CentralLogArchiveBuckets
 from hyperscale.ozone.s3 import CentralS3AccessLogsReplicationRole
 from hyperscale.ozone.s3 import LocalAccessLogsBucket
+from hyperscale.ozone.s3 import OrganizationAssetsBucket
 
 
 @click.group()
@@ -39,6 +40,10 @@ TEMPLATES = {
     "landing-zone-configuration-pipeline": (
         LandingZoneConfigurationPipeline(),
         "A pipeline for landing zone configuration",
+    ),
+    "organization-assets-bucket": (
+        OrganizationAssetsBucket(),
+        "An organization assets bucket",
     ),
 }
 
