@@ -390,7 +390,7 @@ class StaxPipeline:
                 ),
                 Environment=codebuild.Environment(
                     ComputeType="BUILD_GENERAL1_SMALL",
-                    Image="ghcr.io/hyperscale-consulting/stax@sha256:5aee6758058d832aedcfc0b28dd649b13042dacecd5c4f42fb831f67513fc2e2",
+                    Image="ghcr.io/hyperscale-consulting/stax@sha256:2cea6c590191f6a4f339a5dfb0dd9dd0cf9801d423c95aa92c39e64fdafba7f8",
                     Type="LINUX_CONTAINER",
                 ),
                 Source=codebuild.Source(
