@@ -377,6 +377,12 @@ class StaxPipeline:
                                         ),
                                     ],
                                 },
+                                {
+                                    "Sid": "PassRole",
+                                    "Effect": "Allow",
+                                    "Action": "iam:PassRole",
+                                    "Resource": "*",
+                                },
                             ],
                         },
                     )
