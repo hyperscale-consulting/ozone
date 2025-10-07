@@ -59,6 +59,8 @@ class LandingZoneConfigurationPipeline:
 class StaxPipeline:
     oidc_provider: iam.OIDCProvider | Parameter | None = None
     s3_access_logs_bucket: s3.Bucket | Parameter | None = None
+    admin_role_arn: Parameter | None = None
+    execution_role_name: Parameter | None = None
 
     def create_template(self):
         template = Template()
@@ -395,7 +397,9 @@ class StaxPipeline:
                 ),
                 Source=codebuild.Source(
                     Type="CODEPIPELINE",
-                    BuildSpec=Sub(_build_spec()),
+                    BuildSpec=Sub(
+                        _build_spec(self.admin_role_arn, self.execution_role_name)
+                    ),
                 ),
                 ServiceRole=GetAtt(codebuild_role, "Arn"),
             )
@@ -467,7 +471,12 @@ class StaxPipeline:
         )
 
 
-def _build_spec():
+def _build_spec(admin_role_arn, execution_role_name):
+    self_managed_args = (
+        admin_role_arn
+        and f"-a ${{{admin_role_arn.title}}} -e ${{{execution_role_name.title}}}"
+        or ""
+    )
     return (
         "version: 0.2\n"
         "phases:\n"
@@ -475,6 +484,7 @@ def _build_spec():
         "    commands:\n"
         "      - ls\n"
         "      - stax deploy -n ${Namespace} "
+        f"{self_managed_args} "
         "-s ${Namespace}-config.zip.sigstore.json "
         "-i https://github.com/${RepoOwner}/${Repo}/.github/workflows/"
         "${PublishWorkflow}@refs/tags/v$(cat VERSION.txt) "
