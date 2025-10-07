@@ -471,7 +471,7 @@ class StaxPipeline:
         )
 
 
-def _build_spec(admin_role_arn: iam.Role, execution_role_name: str):
+def _build_spec(admin_role_arn: iam.Role | None, execution_role_name: str | None):
     self_managed_args = (
         admin_role_arn
         and f"-a ${{{admin_role_arn.title}.Arn}} -e {execution_role_name}"
