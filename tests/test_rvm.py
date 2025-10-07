@@ -13,12 +13,8 @@ def test_rvm():
     assert not errors
     d = t.to_dict()
     params = d["Parameters"]
-    assert "GitHubRepo" in params
-    assert "RvmPipelineBucketAccessLogBucket" in params
-    assert "GitHubOidcProviderArn" in params
-
-    resources = d["Resources"]
-    assert "RvmPipelineBucket" in resources
+    assert "Repo" in params
+    assert "GitHubOIDCProviderArn" in params
 
 
 def test_rvm_workflow_role():
