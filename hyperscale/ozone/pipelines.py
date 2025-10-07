@@ -59,8 +59,8 @@ class LandingZoneConfigurationPipeline:
 class StaxPipeline:
     oidc_provider: iam.OIDCProvider | Parameter | None = None
     s3_access_logs_bucket: s3.Bucket | Parameter | None = None
-    admin_role_arn: Parameter | None = None
-    execution_role_name: Parameter | None = None
+    admin_role_arn: iam.Role | None = None
+    execution_role_name: str | None = None
 
     def create_template(self):
         template = Template()
@@ -471,10 +471,10 @@ class StaxPipeline:
         )
 
 
-def _build_spec(admin_role_arn, execution_role_name):
+def _build_spec(admin_role_arn: iam.Role, execution_role_name: str):
     self_managed_args = (
         admin_role_arn
-        and f"-a ${{{admin_role_arn.title}}} -e ${{{execution_role_name.title}}}"
+        and f"-a ${{{admin_role_arn.title}.Arn}} -e {execution_role_name}"
         or ""
     )
     return (

@@ -16,29 +16,7 @@ class RoleVendingMachine:
         return template
 
     def add_resources(self, template: Template) -> None:
-        admin_role_arn_param = template.add_parameter(
-            Parameter(
-                "AdminRoleArn",
-                Type="String",
-                Description="The ARN of the admin role to use for stack set operations "
-                "in the admin account",
-            )
-        )
-        execution_role_name = template.add_parameter(
-            Parameter(
-                "ExecutionRoleName",
-                Type="String",
-                Description="The name of the execution role to use for stack set "
-                "operations in the target accounts",
-            )
-        )
-        pipelines = StaxPipeline(
-            admin_role_arn=admin_role_arn_param,
-            execution_role_name=execution_role_name,
-        )
-        pipelines.add_resources(template)
-
-        template.add_resource(
+        rvm_main_role = template.add_resource(
             iam.Role(
                 "RvmMainRole",
                 Metadata=cfn_nag.suppress(
@@ -90,6 +68,11 @@ class RoleVendingMachine:
                 ],
             )
         )
+        pipelines = StaxPipeline(
+            admin_role_arn=rvm_main_role,
+            execution_role_name="RvmWorkflowRole",
+        )
+        pipelines.add_resources(template)
 
 
 class WorkflowRole:
