@@ -1,6 +1,7 @@
 import click
 
-from hyperscale.ozone.iam import GitHubOIDCProvider, GitLabOIDCProvider
+from hyperscale.ozone.iam import GitHubOIDCProvider
+from hyperscale.ozone.iam import GitLabOIDCProvider
 from hyperscale.ozone.pipelines import LandingZoneConfigurationPipeline
 from hyperscale.ozone.rvm import RoleVendingMachine
 from hyperscale.ozone.rvm import WorkflowRole
