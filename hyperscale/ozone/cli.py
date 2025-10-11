@@ -3,6 +3,7 @@ import click
 from hyperscale.ozone.iam import GitHubOIDCProvider
 from hyperscale.ozone.iam import GitLabOIDCProvider
 from hyperscale.ozone.pipelines import LandingZoneConfigurationPipeline
+from hyperscale.ozone.route53resolver import Route53ResolverQueryLoggingConfig
 from hyperscale.ozone.rvm import RoleVendingMachine
 from hyperscale.ozone.rvm import WorkflowRole
 from hyperscale.ozone.s3 import CentralLogArchiveBuckets
@@ -19,6 +20,10 @@ def main():
 
 
 TEMPLATES = {
+    "route53-resolver-query-logging-config": (
+        Route53ResolverQueryLoggingConfig(),
+        "A Route 53 Resolver Query Logging Configuration",
+    ),
     "central-log-archive-buckets": (
         CentralLogArchiveBuckets(),
         "Central log archive buckets",
