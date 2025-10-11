@@ -415,6 +415,9 @@ class CentralLogArchiveBuckets:
             Parameter("OrgId", Type="String", Description="The AWS Organization ID")
         )
         t.add_parameter(
+            Parameter("AuditAccount", Type="String", Description="The audit account ID")
+        )
+        t.add_parameter(
             Parameter(
                 "ReplicationRoleName",
                 Type="String",
@@ -529,6 +532,18 @@ class CentralLogArchiveBuckets:
                             "aws:SourceOrgId": Ref(org_id_param),
                         },
                     },
+                },
+                {
+                    "Sid": "AuditAccountRead",
+                    "Effect": "Allow",
+                    "Principal": {
+                        "AWS": Sub("arn:${AWS::Partition}:iam::${AuditAccount}:root"),
+                    },
+                    "Action": ["s3:ListBucket", "s3:GetObject"],
+                    "Resource": [
+                        Sub("arn:${AWS::Partition}:s3:::${LogsBucket}"),
+                        Sub("arn:${AWS::Partition}:s3:::${LogsBucket}/*"),
+                    ],
                 },
             ],
             bucket_name=Sub("${LogsBucketPrefix}-${AWS::AccountId}-${AWS::Region}"),
