@@ -10,6 +10,7 @@ from hyperscale.ozone.s3 import CentralLogArchiveBuckets
 from hyperscale.ozone.s3 import CentralS3AccessLogsReplicationRole
 from hyperscale.ozone.s3 import LocalAccessLogsBucket
 from hyperscale.ozone.s3 import OrganizationAssetsBucket
+from hyperscale.ozone.cloudtrail import OrganizationalCloudTrail
 
 
 @click.group()
@@ -20,6 +21,10 @@ def main():
 
 
 TEMPLATES = {
+    "organizational-cloudtrail": (
+        OrganizationalCloudTrail(),
+        "An organizational CloudTrail",
+    ),
     "route53-resolver-query-logging-config": (
         Route53ResolverQueryLoggingConfig(),
         "A Route 53 Resolver Query Logging Configuration",
