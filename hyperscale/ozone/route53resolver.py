@@ -45,7 +45,7 @@ class Route53ResolverQueryLoggingConfig:
                 Type="String",
                 Value=Ref(config),
                 Description=(
-                    "The ID of the Route 53 Resolver Query Logging Configuration",
+                    "The ID of the Route 53 Resolver Query Logging Configuration"
                 ),
             )
         )
