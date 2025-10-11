@@ -506,11 +506,6 @@ class CentralLogArchiveBuckets:
                     },
                     "Action": "s3:GetBucketAcl",
                     "Resource": Sub("arn:${AWS::Partition}:s3:::${LogsBucket}"),
-                    "Condition": {
-                        "StringEquals": {
-                            "aws:SourceOrgId": Ref(org_id_param),
-                        },
-                    },
                 },
                 {
                     "Sid": "BucketExistenceCheck",
@@ -524,11 +519,6 @@ class CentralLogArchiveBuckets:
                     },
                     "Action": "s3:ListBucket",
                     "Resource": Sub("arn:${AWS::Partition}:s3:::${LogsBucket}"),
-                    "Condition": {
-                        "StringEquals": {
-                            "aws:SourceOrgId": Ref(org_id_param),
-                        },
-                    },
                 },
                 {
                     "Sid": "AuditAccountRead",
