@@ -2,6 +2,8 @@ from troposphere import Output
 from troposphere import Parameter
 from troposphere import Ref
 from troposphere import route53resolver
+from troposphere import ssm
+from troposphere import Sub
 from troposphere import Template
 
 
@@ -13,6 +15,16 @@ class Route53ResolverQueryLoggingConfig:
         return t
 
     def add_resources(self, t: Template):
+        t.add_parameter(
+            Parameter(
+                "Namespace",
+                Type="String",
+                Description=(
+                    "The namespace for the SSM parameter containing the config ID"
+                ),
+                Default="/hyperscale/ozone",
+            )
+        )
         log_destination_arn_param = t.add_parameter(
             Parameter(
                 "LogDestinationArn",
@@ -24,6 +36,17 @@ class Route53ResolverQueryLoggingConfig:
             route53resolver.ResolverQueryLoggingConfig(
                 "QueryLoggingConfig",
                 DestinationArn=Ref(log_destination_arn_param),
+            )
+        )
+        t.add_resource(
+            ssm.Parameter(
+                "Route53ResolverQueryLoggingConfigId",
+                Name=Sub("${Namespace}/route53resolver/query-logging-config/id"),
+                Type="String",
+                Value=Ref(config),
+                Description=(
+                    "The ID of the Route 53 Resolver Query Logging Configuration",
+                ),
             )
         )
         t.add_output(Output("ResolverQueryLoggingConfigId", Value=Ref(config)))
