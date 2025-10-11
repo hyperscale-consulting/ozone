@@ -933,7 +933,7 @@ wheels = [
 
 [[package]]
 name = "hyperscale-ozone"
-version = "0.16.3"
+version = "0.16.4"
 source = { editable = "." }
 dependencies = [
     { name = "click" },

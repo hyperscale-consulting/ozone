@@ -13,7 +13,6 @@ def test_organizational_cloudtrail():
     assert not errors
     d = t.to_dict()
     params = d["Parameters"]
-    assert "OrgId" in params
     assert "LogArchiveBucketName" in params
 
     resources = d["Resources"]

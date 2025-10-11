@@ -19,9 +19,6 @@ class OrganizationalCloudTrail:
                 Description="The S3 bucket to store CloudTrail logs",
             )
         )
-        org_id_param = t.add_parameter(
-            Parameter("OrgId", Type="String", Description="The AWS Organization ID")
-        )
         t.add_resource(
             cloudtrail.Trail(
                 "OrgTrail",
@@ -31,6 +28,5 @@ class OrganizationalCloudTrail:
                 EnableLogFileValidation=True,
                 IncludeGlobalServiceEvents=True,
                 IsLogging=True,
-                S3KeyPrefix=Ref(org_id_param),
             )
         )
