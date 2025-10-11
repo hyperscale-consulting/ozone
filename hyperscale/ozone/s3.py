@@ -487,13 +487,10 @@ class CentralLogArchiveBuckets:
                         ]
                     },
                     "Action": "s3:PutObject",
-                    "Resource": Sub(
-                        "arn:${AWS::Partition}:s3:::${LogsBucket}/AWSLogs/*"
-                    ),
+                    "Resource": Sub("arn:${AWS::Partition}:s3:::${LogsBucket}/*"),
                     "Condition": {
                         "StringEquals": {
                             "aws:SourceOrgId": Ref(org_id_param),
-                            "s3:x-amz-acl": "bucket-owner-full-control",
                         },
                     },
                 },
