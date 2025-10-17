@@ -324,8 +324,10 @@ class StaxPipeline:
                                     "Action": [
                                         "cloudformation:CreateStackInstances",
                                         "cloudformation:DeleteStackInstances",
+                                        "cloudformation:DeleteStack",
                                         "cloudformation:ListStackInstances",
                                         "cloudformation:DescribeStackSet",
+                                        "cloudformation:DescribeStacks",
                                         "cloudformation:UpdateStackSet",
                                         "cloudformation:GetTemplateSummary",
                                         "cloudformation:TagResource",
@@ -333,6 +335,9 @@ class StaxPipeline:
                                     "Resource": [
                                         Sub(
                                             "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stackset/${Namespace}-*",
+                                        ),
+                                        Sub(
+                                            "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${Namespace}-*",
                                         ),
                                         Sub(
                                             "arn:${AWS::Partition}:cloudformation:*:${AWS::AccountId}:stackset-target/${Namespace}-*",
@@ -347,8 +352,10 @@ class StaxPipeline:
                                     "Effect": "Allow",
                                     "Action": [
                                         "cloudformation:CreateStackSet",
+                                        "cloudformation:CreateStack",
                                         "cloudformation:DescribeStackSet",
                                         "cloudformation:ListStackSets",
+                                        "cloudformation:ListStacks",
                                     ],
                                     "Resource": "*",
                                 },
