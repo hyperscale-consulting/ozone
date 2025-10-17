@@ -329,6 +329,7 @@ class StaxPipeline:
                                         "cloudformation:DescribeStackSet",
                                         "cloudformation:DescribeStacks",
                                         "cloudformation:UpdateStackSet",
+                                        "cloudformation:UpdateStack",
                                         "cloudformation:GetTemplateSummary",
                                         "cloudformation:TagResource",
                                     ],
