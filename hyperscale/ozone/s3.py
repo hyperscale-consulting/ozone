@@ -39,7 +39,7 @@ class OrganizationAssetsBucket:
                 {
                     "Effect": "Allow",
                     "Principal": "*",
-                    "Action": "s3:GetObject",
+                    "Action": ["s3:GetObject", "s3:GetObjectVersion"],
                     "Resource": Sub(
                         "arn:${AWS::Partition}:s3:::${OrganizationAssetsBucket}/*"
                     ),
