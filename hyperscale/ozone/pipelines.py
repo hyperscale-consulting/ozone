@@ -335,16 +335,16 @@ class StaxPipeline:
                                     ],
                                     "Resource": [
                                         Sub(
-                                            "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stackset/${Namespace}-*",
+                                            "arn:${AWS::Partition}:cloudformation:*:${AWS::AccountId}:stackset/${Namespace}-*",
                                         ),
                                         Sub(
-                                            "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${Namespace}-*",
+                                            "arn:${AWS::Partition}:cloudformation:*:${AWS::AccountId}:stack/${Namespace}-*",
                                         ),
                                         Sub(
                                             "arn:${AWS::Partition}:cloudformation:*:${AWS::AccountId}:stackset-target/${Namespace}-*",
                                         ),
                                         Sub(
-                                            "arn:${AWS::Partition}:cloudformation:${AWS::Region}::type/resource/*",
+                                            "arn:${AWS::Partition}:cloudformation:*::type/resource/*",
                                         ),
                                     ],
                                 },
