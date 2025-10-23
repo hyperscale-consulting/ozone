@@ -8,6 +8,7 @@ from troposphere import Output
 from troposphere import Parameter
 from troposphere import Ref
 from troposphere import s3
+from troposphere import ssm
 from troposphere import Sub
 from troposphere import Template
 
@@ -22,19 +23,19 @@ class OrganizationAssetsBucket:
         return t
 
     def add_resources(self, t: Template) -> None:
-        access_logs_bucket_param = t.add_parameter(
-            Parameter(
-                "S3AccessLogsBucket",
-                Type="String",
-                Description="The name of the S3 access logs bucket.",
-            )
-        )
         org_id_param = t.add_parameter(
             Parameter("OrgId", Type="String", Description="The AWS Organization ID")
         )
+        s3_access_logs_bucket_ssm_param = t.add_parameter(
+            Parameter(
+                "S3AccessLogsBucketSsmParam",
+                Type="AWS::SSM::Parameter::Value<String>",
+                Description="The SSM parameter to fetch the S3 access logs bucket name",
+            )
+        )
         bucket = SecureS3(
             "OrganizationAssets",
-            access_logs_bucket=Ref(access_logs_bucket_param),
+            access_logs_bucket=Ref(s3_access_logs_bucket_ssm_param),
             policy_statements=[
                 {
                     "Effect": "Allow",
@@ -322,6 +323,15 @@ class LocalAccessLogsBucket:
                 "<BucketPrefix>-<AccountId>-<Region>",
             )
         )
+        bucket_name_ssm_param = t.add_parameter(
+            Parameter(
+                "LocalS3AccessLogsBucketSsmParam",
+                Type="String",
+                Description=(
+                    "The SSM parameter to store the full S3 access logs bucket name"
+                ),
+            )
+        )
 
         replication_config = s3.ReplicationConfiguration(
             Role=Sub(
@@ -360,6 +370,18 @@ class LocalAccessLogsBucket:
             replication_config=replication_config,
         )
         access_logs_bucket.add_resources(t)
+
+        t.add_resource(
+            ssm.Parameter(
+                "AccessLogsBucketSsmParam",
+                Name=Ref(bucket_name_ssm_param),
+                Type="String",
+                Value=Sub(
+                    "${LocalS3AccessLogsBucketPrefix}-${AWS::AccountId}-${AWS::Region}"
+                ),
+                Description="The S3 local access logs bucket name",
+            )
+        )
 
         t.add_output(
             Output(
