@@ -155,6 +155,7 @@ class WorkflowRole:
                                         "iam:PutRolePolicy",
                                         "iam:SetDefaultPolicyVersion",
                                         "iam:TagRole",
+                                        "iam:UpdateAssumeRolePolicy",
                                     ],
                                     "Resource": "*",
                                 }
